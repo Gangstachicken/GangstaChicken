@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Физсправка — мини-энциклопедия по физике</title>
+  <style>
+    :root{
+      --bg:#071028; --card:#0f2036; --accent:#00d4ff; --muted:#9fb7c9; --glass: rgba(255,255,255,0.03);
+      --success:#3fe27a; --warn:#ffd166; --error:#ff6b6b;
+      font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:linear-gradient(180deg,#021021 0%, #071028 60%);
+      color:#e6f7ff; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    header{
+      padding:22px 20px; display:flex; gap:16px; align-items:center; border-bottom:1px solid rgba(255,255,255,0.03);
+    }
+    .logo{
+      width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7afcff);
+      display:flex;align-items:center;justify-content:center;color:#012; font-weight:800; font-size:20px;
+      box-shadow:0 4px 20px rgba(0,212,255,0.08);
+    }
+    h1{margin:0;font-size:18px}
+    .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
+    main{display:grid;grid-template-columns:380px 1fr;gap:20px;padding:20px;}
+    @media(max-width:900px){ main{grid-template-columns:1fr} .left{order:2} .right{order:1} }
+    .card{background:linear-gradient(180deg,var(--card), #071a2b);padding:16px;border-radius:12px;box-shadow:0 6px 30px rgba(2,16,32,0.6)}
+    .left .card{height:calc(100vh - 140px);overflow:auto;}
+    .searchBox{display:flex;gap:8px;align-items:center}
+    input[type="text"]{
+      width:100%; padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);
+      background:var(--glass); color:inherit; outline:none; font-size:15px;
+    }
+    button{
+      background:var(--accent); color:#012; border:none; padding:10px 14px;border-radius:10px; cursor:pointer;
+      font-weight:700;
+    }
+    .controls{display:flex;gap:8px;margin-top:12px}
+    .topics{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .topic{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;font-size:13px;color:var(--muted);cursor:pointer}
+    .topic:hover{background:rgba(255,255,255,0.03);color:#fff}
+    .right .card{min-height:300px}
+    .qa{display:flex;gap:12px;align-items:flex-start}
+    .userInput{flex:1}
+    .answer{margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,0.15);color:#e6f7ff}
+    .status{padding:8px;border-radius:8px;margin-top:8px;display:inline-block;font-weight:700}
+    .status.ok{background:linear-gradient(90deg,var(--success),#16c67a);color:#012}
+    .status.partial{background:linear-gradient(90deg,var(--warn),#ffcc66);color:#012}
+    .status.no{background:linear-gradient(90deg,var(--error),#ff7b7b);color:#012}
+    .listItem{padding:10px;border-radius:8px;margin-top:8px;background:rgba(255,255,255,0.02);font-size:14px}
+    footer{padding:18px 20px;color:var(--muted);font-size:13px;text-align:center}
+    .small{font-size:13px;color:var(--muted);margin-top:6px}
+    .kbd{display:inline-block;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.02);font-weight:700}
+    .results{margin-top:12px}
+    .topic-list{max-height:220px;overflow:auto;padding-right:6px}
+    pre{white-space:pre-wrap;font-family:monospace;background:rgba(0,0,0,0.15);padding:12px;border-radius:8px;color:#dff8ff}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Φ</div>
+    <div>
+      <h1>Физсправка — мини-энциклопедия</h1>
+      <div class="subtitle">Быстрые формулы и пояснения. Offline • Готов к публикации на GitHub Pages</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="left">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <strong>Быстрый поиск</strong>
+            <div class="small">Задавайте вопросы простыми словами: «формула силы», «частота струны», «скорость падения»</div>
+          </div>
+          <div style="text-align:right">
+            <div class="small">Готов к публикации: <span class="kbd">index.html</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="searchBox">
+          <input id="qinput" type="text" placeholder="Например: как посчитать скорость падения с сопротивлением воздуха?" />
+          <button id="askBtn">Спросить</button>
+        </div>
+
+        <div class="controls">
+          <button id="showAll">Показать темы</button>
+          <button id="downloadBtn">Скачать JSON</button>
+        </div>
+
+        <div class="small" style="margin-top:12px">Популярные темы:</div>
+        <div class="topic-list">
+          <div class="topics" id="topics"></div>
+        </div>
+
+        <div class="small" style="margin-top:12px">Подсказка: можно использовать ключевые слова (сила, скорость, частота, закон Ома, гравитация и т.д.).</div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <strong>Результаты поиска</strong>
+        <div id="results" class="results"></div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <strong>Диалог</strong>
+            <div class="small">Задавай вопрос и попробуй ответить сам — программа подскажет, насколько ответ близок.</div>
+          </div>
+          <div class="small">Ответы учитывают частичные совпадения</div>
+        </div>
+
+        <div class="qa" style="margin-top:12px">
+          <div class="userInput" style="width:100%">
+            <label style="font-size:13px;color:var(--muted)">Вопрос</label>
+            <input id="questionField" type="text" placeholder="Например: Какие формулы для энергии?" />
+            <label style="font-size:13px;color:var(--muted);margin-top:8px;display:block">Твой ответ (пробуй написать сам)</label>
+            <input id="userAnswer" type="text" placeholder="Например: E = 0.5 m v^2" style="margin-top:6px" />
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button id="checkBtn">Проверить ответ</button>
+              <button id="clearBtn" style="background:rgba(255,255,255,0.04);color:var(--accent)">Очистить</button>
+            </div>
+
+            <div id="statusBox" style="margin-top:12px"></div>
+
+            <div id="answerBox" class="answer" style="display:none"></div>
+            <div id="explainBox" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <strong>Справочник — основные темы</strong>
+        <div class="small">Ниже — те же записи, что использует поиск. Можно нажать на тему, чтобы посмотреть.</div>
+        <div id="fullList" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Сайт офлайн — сохраняй `index.html`. Для публикации: GitHub Pages (бесплатно). Нужна помощь с выкладкой — скажи, я распишу шаги.
+  </footer>
+
+<script>
+/* ========== БАЗА ЗНАНИЙ ========== */
+/* Ключи — короткие слова/фразы, значения — развернутый текст.
+   Можно дополнять — это основной "словарь" сайта.
+*/
+const physicsData = {
+  "сила": "Сила (F) измеряется в ньютонах (Н). Формула: F = m * a, где m — масса (кг), a — ускорение (м/с²).",
+  "масса": "Масса — количество вещества в теле, измеряется в килограммах (кг).",
+  "ускорение": "Ускорение (a) — изменение скорости за единицу времени, м/с².",
+  "скорость (сопротивление воздуха)": "Скорость тела при падении с учётом сопротивления воздуха. Модель при сопротивлении ∝ v: m dv/dt = m g - k v. Решение: v(t) = (m g / k) * (1 - exp(-k t / m)). Терминальная скорость: v_term = m g / k. Для сопротивления ∝ v^2 уравнение нелинейное и даёт другой вид зависимости; в приближении можно найти v_терминальную ≈ sqrt( (2 m g) / (ρ_air C_d A) ).",
+  "свободное падение": "В вакууме скорость растёт как v = g * t; путь: s = 0.5 g t^2. g ≈ 9.81 м/с² (Земля).",
+  "кинетическая энергия": "E_k = 0.5 * m * v^2 — кинетическая энергия движущегося тела (Дж).",
+  "потенциальная энергия": "E_p = m * g * h — потенциальная энергия тела на высоте h над уровнем (Дж).",
+  "работа": "A = F * d * cos(θ) — работа силы F при перемещении на d под углом θ.",
+  "мощность": "P = A / t или P = F * v — мощность, ватт (Вт).",
+  "импульс": "p = m * v — линейный импульс тела. Закон сохранения импульса: в замкнутой системе суммарный импульс сохраняется.",
+  "закон ньютон": "Три закона Ньютона: 1) инерция; 2) F = m a; 3) действие = противодействие.",
+  "плотность": "ρ = m / V — плотность вещества (кг/м³).",
+  "частота": "Частота f = 1 / T. Для струны: f = (1 / (2 L)) * sqrt( E / ρ ) — приближённая формула, где L — длина струны, E — модуль Юнга, ρ — плотность (возможно, вдобавок учитывается натяжение и линейная плотность μ).",
+  "закон сохранения энергии": "Энергия не создаётся и не исчезает, только переходит из формы в форму (ΔE_total = 0 в замкнутой системе).",
+  "температура": "Мера средней кинетической энергии частиц. T в Кельвинах: K = (3/2) k_B T для идеального газа (средняя кинетическая энергия молекул).",
+  "первый закон термодинамики": "ΔU = Q - A, где ΔU — изменение внутренней энергии, Q — подведённое тепло, A — работа, совершённая системой.",
+  "второй закон термодинамики": "Энтропия в замкнутой системе не убывает; тепловое движение стремится к равновесию.",
+  "закон ома": "I = U / R — закон Ома для участка цепи. R — сопротивление, U — напряжение, I — ток.",
+  "электрический ток": "I = Q / t — ток (А).",
+  "напряжение": "U = W / q — потенциал/разность потенциалов (В).",
+  "сопротивление": "R = ρ * L / A (удельное сопротивление ρ, длина L и площадь A); также R = U / I.",
+  "мощность электрическая": "P = U * I = I^2 * R = U^2 / R.",
+  "электромагнитная индукция": "ЭДС индукции E = -dΦ/dt (закон Фарадея).",
+  "волна": "Колебательное движение, переносящее энергию. В механических волнах частицы среды колеблются, волна переносит энергию.",
+  "скорость волны": "v = λ * f (λ — длина волны, f — частота).",
+  "закон отражения": "Угол падения = угол отражения.",
+  "закон преломления": "n1 sin θ1 = n2 sin θ2 (закон Снеллиуса).",
+  "интерференция": "Наложение волн: в местах совпадения фаз — усиление, в противофазе — ослабление.",
+  "дифракция": "Отклонение волн на препятствиях; важна длина волны и размеры щели.",
+  "гравитация": "Сила притяжения F = G * (m1 * m2) / r^2, G ≈ 6.674×10^-11 Н·м²/кг².",
+  "энергия фотона": "E = h * f (h — постоянная Планка).",
+  "принцип неопределенности": "Δx * Δp ≥ h / (4π) — основа квантовой механики (Гейзенберг).",
+  // можно дополнять новыми ключами
+};
+
+/* ========== УТИЛИТЫ поиска и сравнения ========== */
+function normalizeText(s){
+  if(!s) return "";
+  // приведение к нижнему регистру и удаление пунктуации (русские и базовые)
+  const punct = /[.,\/#!$%\^&\*;:{}=\-_`~()«»?؟՝։…]/g;
+  return s.toLowerCase().replace(punct,'').replace(/\s+/g,' ').trim();
+}
+
+/* наивная логика ответа:
+   - ищем ключи, содержащиеся в вопросе (по нормализованному вхождению)
+   - если нашлось несколько — объединяем
+*/
+function findMatches(question){
+  const q = normalizeText(question);
+  const matched = [];
+  for(const key in physicsData){
+    const kk = normalizeText(key);
+    if(kk && q.includes(kk)) matched.push({key, text: physicsData[key]});
+  }
+  // если ничего не найдено — попытка по словам
+  if(matched.length === 0){
+    const words = q.split(' ');
+    for(const key in physicsData){
+      const kk = normalizeText(key);
+      for(const w of words){
+        if(w.length > 3 && kk.includes(w) && !matched.some(m=>m.key===key)){
+          matched.push({key, text: physicsData[key]});
+        }
+      }
+    }
+  }
+  return matched;
+}
+
+/* детальная проверка ответа пользователя: если ответ содержит ключевые слова из правильного ответа,
+   то считаем как частичное совпадение (Ты на правильном пути)
+*/
+function evaluateUserAnswer(userAnswer, foundTexts){
+  const u = normalizeText(userAnswer);
+  if(!u) return {status:'empty', message:'Нет ответа'};
+  // объединённый текст эталона
+  const reference = normalizeText(foundTexts.join(' '));
+  if(!reference) return {status:'no-ref', message:'Нет эталонного ответа для проверки'};
+  if(u === reference) return {status:'exact', message:'Да, правильно!'};
+  // если пользователь написал часть ключевых слов
+  const refWords = reference.split(' ').filter(s=>s.length>3);
+  let common = 0;
+  for(const w of refWords){
+    if(u.includes(w)) common++;
+  }
+  if(common >= 1){
+    // если он назвал хотя бы одно ключевое слово — частичное совпадение
+    return {status:'partial', message:'Ты на правильном пути (есть совпадения по ключевым словам).'};
+  }
+  // попытка учесть численные формулы: смотрим простую подстроку (например "e=0.5 m v^2" -> "0.5 m v2")
+  const digitsRef = reference.replace(/[^0-9\. \+\-\*\/\^mvgρλμ]/g,'');
+  const digitsUser = u.replace(/[^0-9\. \+\-\*\/\^mvgρλμ]/g,'');
+  if(digitsRef && digitsUser && digitsUser.length>0 && digitsRef.includes(digitsUser.slice(0,Math.min(6,digitsUser.length)))){
+    return {status:'partial', message:'Почти — в ответе есть элементы формулы.'};
+  }
+  return {status:'no', message:'Нет, но вот правильный ответ ниже.'};
+}
+
+/* ========== UI логика ========== */
+const qinput = document.getElementById('qinput');
+const askBtn = document.getElementById('askBtn');
+const resultsDiv = document.getElementById('results');
+const topicsDiv = document.getElementById('topics');
+const fullList = document.getElementById('fullList');
+
+const questionField = document.getElementById('questionField');
+const userAnswer = document.getElementById('userAnswer');
+const checkBtn = document.getElementById('checkBtn');
+const clearBtn = document.getElementById('clearBtn');
+const statusBox = document.getElementById('statusBox');
+const answerBox = document.getElementById('answerBox');
+const explainBox = document.getElementById('explainBox');
+const showAllBtn = document.getElementById('showAll');
+const downloadBtn = document.getElementById('downloadBtn');
+
+function renderTopics(){
+  topicsDiv.innerHTML='';
+  const keys = Object.keys(physicsData);
+  for(let i=0;i<keys.length;i++){
+    const t = document.createElement('div');
+    t.className='topic';
+    t.textContent = keys[i];
+    t.onclick = ()=>{ qinput.value = keys[i]; ask(); };
+    topicsDiv.appendChild(t);
+  }
+}
+
+function renderFullList(){
+  fullList.innerHTML='';
+  for(const key of Object.keys(physicsData)){
+    const item = document.createElement('div');
+    item.className='listItem';
+    item.innerHTML = `<strong>${key}</strong><div class="small" style="margin-top:6px">${physicsData[key]}</div>`;
+    fullList.appendChild(item);
+  }
+}
+
+function ask(){
+  const q = qinput.value.trim();
+  if(!q){
+    resultsDiv.innerHTML = '<div class="small">Введите вопрос или нажмите тему.</div>';
+    return;
+  }
+  const matches = findMatches(q);
+  if(matches.length===0){
+    resultsDiv.innerHTML = `<div class="small">Ничего не найдено. Попробуйте другой вопрос или ключевое слово.</div>`;
+    return;
+  }
+  // выводим найденные записи
+  let html = '';
+  matches.forEach((m,idx)=>{
+    html += `<div style="margin-top:8px"><strong>${m.key}</strong><div class="small" style="margin-top:6px">${m.text}</div></div>`;
+  });
+  resultsDiv.innerHTML = html;
+  // подготовка для проверки ответов: сохраняем найденные тексты
+  window._lastFound = matches.map(m=>m.text);
+  // покажем первый найденный в explainBox
+  explainBox.innerHTML = `<pre>${matches.map(m=>`[${m.key}] — ${m.text}`).join('\\n\\n')}</pre>`;
+  answerBox.style.display='none';
+  statusBox.innerHTML='';
+}
+
+askBtn.onclick = ask;
+qinput.addEventListener('keydown', e=>{ if(e.key==='Enter') ask(); });
+showAllBtn.onclick = ()=>{ qinput.value=''; qinput.focus(); resultsDiv.innerHTML=''; renderFullList(); };
+downloadBtn.onclick = ()=> {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(physicsData,null,2));
+  const a = document.createElement('a'); a.href=dataStr; a.download = 'physics_data.json'; a.click();
+};
+
+checkBtn.onclick = ()=>{
+  const q = questionField.value.trim();
+  const ua = userAnswer.value.trim();
+  if(!q){ statusBox.innerHTML = `<div class="status no">Введите вопрос в поле «Вопрос».</div>`; return;}
+  const matches = findMatches(q);
+  if(matches.length===0){
+    statusBox.innerHTML = `<div class="status no">По вопросу ничего не найдено. Попробуйте переформулировать.</div>`;
+    answerBox.style.display='block'; answerBox.textContent='—';
+    explainBox.innerHTML='';
+    return;
+  }
+  // evaluate
+  const foundTexts = matches.map(m=>m.text);
+  const res = evaluateUserAnswer(ua, foundTexts);
+  if(res.status==='exact'){
+    statusBox.innerHTML = `<div class="status ok">${res.message}</div>`;
+  } else if(res.status==='partial' || res.status==='almost'){
+    statusBox.innerHTML = `<div class="status partial">${res.message}</div>`;
+    // показываем правильный ответ ниже
+    answerBox.style.display='block'; answerBox.innerHTML = `<strong>Правильный ответ (эталон):</strong><br>${foundTexts.join('\\n\\n')}`;
+  } else if(res.status==='empty'){
+    statusBox.innerHTML = `<div class="status no">Вы не ввели ответ.</div>`;
+    answerBox.style.display='none';
+  } else {
+    statusBox.innerHTML = `<div class="status no">${res.message}</div>`;
+    answerBox.style.display='block'; answerBox.innerHTML = `<strong>Правильный ответ:</strong><br>${foundTexts.join('\\n\\n')}`;
+  }
+  // показать объяснение/источник
+  explainBox.innerHTML = `<pre>${matches.map(m=>`[${m.key}] — ${m.text}`).join('\\n\\n')}</pre>`;
+};
+
+clearBtn.onclick = ()=>{
+  questionField.value=''; userAnswer.value=''; statusBox.innerHTML=''; answerBox.style.display='none'; explainBox.innerHTML='';
+};
+
+renderTopics();
+renderFullList();
+
+/* быстрый фокус */
+qinput.focus();
+</script>
+</body>
+</html>
